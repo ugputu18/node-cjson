@@ -1,6 +1,4 @@
-var fs = require('fs'),
-    Path = require('path'),
-    jph = require('json-parse-helpfulerror');
+var jph = require('json-parse-helpfulerror');
 
 /**
  * Default options.
@@ -161,74 +159,4 @@ exports.freeze = function freeze(obj) {
 
         Object.freeze(obj);
     }
-};
-
-/**
- * Load and parse a config file/files.
- *
- * @param {String|Array} path absolute path/paths to the file/files or dir.
- * @param {Object|Boolean} [options] if true, extend all jsons to the first one,
- *     it can be also object {merge: true, replace: {key: 'value'}}
- * @return {Object} conf parsed json object.
- */
-exports.load = function load(path, options) {
-    var data, paths, conf;
-
-    if (options === true) {
-        options = {merge: true};
-    }
-
-    options = exports.extend({}, exports.options, options);
-
-    if (Array.isArray(path)) {
-        conf = {};
-        path.forEach(function(path) {
-            var data = load(path, options),
-                filename;
-
-            if (options.merge) {
-                exports.extend(true, conf, data);
-            } else {
-                filename = Path.basename(path, options.ext);
-                conf[filename] = data;
-            }
-        });
-
-        return conf;
-    }
-
-    if (fs.statSync(path).isDirectory()) {
-        paths = [];
-        fs.readdirSync(path).forEach(function(filename) {
-            var file = Path.join(path, filename);
-
-            if (Path.extname(file) == options.ext && fs.statSync(file).isFile()) {
-                paths.push(file);
-            }
-        });
-
-        return load(paths, options);
-    }
-
-    data = fs.readFileSync(path, 'utf-8');
-
-    // replace BOM Character
-    data = data.replace(/\ufeff/g, '');
-
-    if (options.replace) {
-        data = exports.replace(data, options.replace);
-    }
-
-    try {
-        data = exports.parse(data);
-    } catch(err) {
-        err.message += '\nFile: "' + path + '"';
-        throw err;
-    }
-
-    if (options.freeze) {
-        exports.freeze(data);
-    }
-
-    return data;
 };
